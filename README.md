@@ -150,7 +150,7 @@ python demoFile.py --model libritts_v1 -i ../codec/test/A002_02_BBP_NORMAL.wav -
 
 - **With GPU** (e.g., CUDA device 0)  
   ```
-  python demoFile.py \\
+  python AudioDec.py \\
     --model libritts_v1 \\
     -i path/to/input.wav \\
     -o path/to/output.wav
@@ -158,7 +158,7 @@ python demoFile.py --model libritts_v1 -i ../codec/test/A002_02_BBP_NORMAL.wav -
 
 - **With CPU only**  
   ```
-  python demoFile.py \\
+  python AudioDec.py \\
     --cuda -1 \\
     --model vctk_v1 \\
     -i path/to/input.wav \\
@@ -169,7 +169,7 @@ python demoFile.py --model libritts_v1 -i ../codec/test/A002_02_BBP_NORMAL.wav -
 
 - **With GPU**  
   ```
-  python demoFile.py \\
+  python AudioDec.py \\
     --model vctk_v1 \\
     -i path/to/input_folder \\
     -o path/to/output_folder
@@ -177,7 +177,7 @@ python demoFile.py --model libritts_v1 -i ../codec/test/A002_02_BBP_NORMAL.wav -
 
 - **With CPU only**  
   ```
-  python demoFile.py \\
+  python AudioDec.py \\
     --cuda -1 \\
     --model libritts_v1 \\
     -i path/to/input_folder \\
