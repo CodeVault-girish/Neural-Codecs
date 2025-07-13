@@ -34,8 +34,8 @@ The following codec decoders are available in this repository:
 8. **encodec_48khz**  
 9. **soundstream_16khz**  
 10. **speechtokenizer**
---. **Funcodec**
---. **AudioDec**
+11. **Funcodec**
+12. **AudioDec**
 ```
 decode_folder('2', 'raw_wavs', 'decoded', 'cpu')
 decode_folder('10', '/home/girish/Girish/Reseach/Health-care/Audio_Data/Audio_Data/HC', 'output/', 'cuda')
