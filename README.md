@@ -75,7 +75,7 @@ pip install --no-deps --force-reinstall git+https://github.com/ga642381/AudioCod
 ---
 ## For Funcodec
 ```
-pyhton3 -m venv funcodec
+python3 -m venv funcodec
 source funcodec/bin/activate
 ```
 ```
