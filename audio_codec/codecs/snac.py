@@ -1,6 +1,6 @@
 import os
 import torch
-import torchaudio
+import numpy as np
 import soundfile as sf
 from snac import SNAC
 
@@ -8,16 +8,26 @@ class SNACDecoder:
     def __init__(self, hub_name: str, sample_rate: int, device: str = "cpu"):
         self.sample_rate = sample_rate
         self.device      = torch.device(device)
-        print(f"  → Loading SNAC model {hub_name} onto {self.device}")
+        print(f"  -> Loading SNAC model {hub_name} onto {self.device}")
         self.model = SNAC.from_pretrained(hub_name).eval().to(self.device)
         self.name  = hub_name.replace("/", "_")
 
+    def _resample(self, wav: torch.Tensor, orig_sr: int) -> torch.Tensor:
+        if orig_sr == self.sample_rate:
+            return wav
+        # simple linear interpolation resample
+        orig_len = wav.shape[-1]
+        new_len  = int(orig_len * self.sample_rate / orig_sr)
+        return torch.nn.functional.interpolate(
+            wav.unsqueeze(0), size=new_len, mode="linear", align_corners=False
+        ).squeeze(0)
+
     def _load(self, path: str):
-        wav, sr = torchaudio.load(path)
+        data, sr = sf.read(path, dtype="float32", always_2d=True)
+        wav = torch.from_numpy(data.T)          # (channels, samples)
         if wav.size(0) > 1:
             wav = wav.mean(dim=0, keepdim=True)
-        if sr != self.sample_rate:
-            wav = torchaudio.transforms.Resample(sr, self.sample_rate)(wav)
+        wav = self._resample(wav, sr)
         peak = wav.abs().max()
         if peak > 1.0:
             wav = wav / peak

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neural-codecs"
+version = "0.1.0"
+description = "Pipeline library for neural audio codec encode/decode — batch WAV processing for dataset creation"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "torch",
+    "torchaudio",
+    "soundfile",
+    "tqdm",
+]
+
+[project.scripts]
+neural-codec = "audio_codec.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["audio_codec*"]

@@ -1,21 +1,39 @@
 import os
 import torch
-import torchaudio
+import numpy as np
+import soundfile as sf
 from torchaudio.transforms import Resample
-from soundstream import from_pretrained, load as load_audio
+
+try:
+    from soundstream import from_pretrained as _ss_from_pretrained
+except ImportError as _e:
+    raise ImportError(
+        "SoundStream package not installed. Run:\n"
+        "  neural-codec setup --codec soundstream_16khz\n"
+        f"Original error: {_e}"
+    ) from _e
+
+def _load_wav(path: str, target_sr: int) -> tuple[torch.Tensor, int]:
+    data, sr = sf.read(path, dtype="float32", always_2d=True)
+    wav = torch.from_numpy(data.T)              # (C, T)
+    if wav.size(0) > 1:
+        wav = wav.mean(dim=0, keepdim=True)     # mono (1, T)
+    if sr != target_sr:
+        wav = Resample(sr, target_sr)(wav)
+    return wav, target_sr
+
+def _save_wav(path: str, wav: torch.Tensor, sr: int):
+    arr = wav.squeeze().cpu().numpy()           # (T,)
+    sf.write(path, arr, sr, subtype="PCM_16")
 
 class SoundStreamDecoder:
     def __init__(self, hub_name: str, sample_rate: int, device: str = "cpu"):
-        # SoundStream doesn't take hub_name; ignore it
-        self.device       = torch.device(device if (device == "cpu" or torch.cuda.is_available()) else "cpu")
-        # model always runs at 16 kHz
-        self.model_sr     = 16000
-        # desired output rate
-        self.sample_rate  = sample_rate
-        self.name         = f"soundstream_{self.model_sr//1000}khz"
-        print(f"  → Loading SoundStream model onto {self.device}")
-        # load & move to device
-        self.codec = from_pretrained().eval().to(self.device)
+        self.device      = torch.device(device if (device == "cpu" or torch.cuda.is_available()) else "cpu")
+        self.model_sr    = 16000
+        self.sample_rate = sample_rate
+        self.name        = f"soundstream_{self.model_sr // 1000}khz"
+        print(f"  -> Loading SoundStream model onto {self.device}")
+        self.codec = _ss_from_pretrained().eval().to(self.device)
 
     def decode_file(self, src_path: str, out_dir: str):
         base     = os.path.splitext(os.path.basename(src_path))[0]
@@ -23,26 +41,16 @@ class SoundStreamDecoder:
         out_path = os.path.join(out_dir, out_name)
         os.makedirs(out_dir, exist_ok=True)
 
-        # 1) load @16 kHz
-        waveform = load_audio(src_path)                   # [1, T] @16 kHz
-        waveform = waveform.to(self.device)
+        waveform, _ = _load_wav(src_path, self.model_sr)
+        waveform    = waveform.unsqueeze(0).to(self.device)     # (1, 1, T) — batch x chan x time
 
-        # 2) encode & decode
         with torch.inference_mode():
-            quantized = self.codec(waveform, mode="encode")
-            recovered = self.codec(quantized, mode="decode")  # [1, C, T']
+            recovered = self.codec(waveform, mode="end-to-end") # (1, 1, T')
 
-        # 3) detach, cpu & squeeze batch dim → [C, T']
-        recovered = recovered.detach().cpu()[0]
-
-        # 4) optionally resample to target rate
+        recovered = recovered.detach().cpu().squeeze(0)         # (1, T')
         if self.sample_rate != self.model_sr:
-            resampler = Resample(orig_freq=self.model_sr, new_freq=self.sample_rate)
-            recovered = resampler(recovered)
+            recovered = Resample(self.model_sr, self.sample_rate)(recovered)
 
-        # 5) save (expects [channels, time])
-        torchaudio.save(out_path, recovered, self.sample_rate)
-
-        # 6) cleanup
-        del waveform, quantized, recovered
+        _save_wav(out_path, recovered, self.sample_rate)
+        del waveform, recovered
         return out_name

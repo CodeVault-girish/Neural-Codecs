@@ -1,0 +1,19 @@
+# SpeechTokenizer — ID 10  (16 kHz)
+# Requires a manually downloaded checkpoint — pip install alone is not enough.
+#
+# Step 1 — Install packages:
+#   pip install -r requirements/speechtokenizer.txt
+#
+# Step 2 — Download model files from HuggingFace:
+#   https://huggingface.co/fnlp/SpeechTokenizer/tree/main/speechtokenizer_hubert_avg
+#
+#   Save to:
+#     checkpoints/SpeechTokenizer.pt
+#     config/config.json
+#
+# Step 3 — Decode:
+#   neural-codec decode --codec speechtokenizer --input ./wavs --output ./out
+
+-r base.txt
+speechtokenizer
+beartype

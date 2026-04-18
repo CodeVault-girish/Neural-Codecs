@@ -1,0 +1,9 @@
+# Base requirements — needed by all codecs
+# Install once per environment:
+#   pip install -r requirements/base.txt
+
+torch
+torchaudio
+soundfile
+numpy
+tqdm

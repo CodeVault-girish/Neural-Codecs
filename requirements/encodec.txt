@@ -1,0 +1,12 @@
+# EnCodec — Facebook — IDs 7, 8  (24 kHz mono / 48 kHz stereo)
+# Model weights download automatically from HuggingFace on first use.
+#
+# Install:
+#   pip install -r requirements/encodec.txt
+#
+# Or via CLI:
+#   neural-codec setup --codec encodec_24khz
+
+-r base.txt
+transformers
+encodec

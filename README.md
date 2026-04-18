@@ -1,185 +1,431 @@
-# CodecEncoderDecoder
+# Neural Codecs
 
-***
-***
+A pipeline library for batch **encode → decode** round-trips through neural audio codec models.
+Feed it a folder of WAV files, pick a codec, get reconstructed WAVs — useful for building
+codec-distorted datasets, evaluating codec quality, or preprocessing audio for TTS/ASR training.
+
+---
+
+## Codec Support
+
+| ID | Name | Sample Rate | Install | Output |
+|----|------|-------------|---------|--------|
+| 1 | `snac_24khz` | 24 kHz | `pip install snac` | mono |
+| 2 | `snac_32khz` | 32 kHz | `pip install snac` | mono |
+| 3 | `snac_44khz` | 44 kHz | `pip install snac` | mono |
+| 4 | `dac_16khz` | 16 kHz | `pip install descript-audio-codec` | mono |
+| 5 | `dac_24khz` | 24 kHz | `pip install descript-audio-codec` | mono |
+| 6 | `dac_44khz` | 44 kHz | `pip install descript-audio-codec` | mono |
+| 7 | `encodec_24khz` | 24 kHz | `pip install transformers encodec` | mono |
+| 8 | `encodec_48khz` | 48 kHz | `pip install transformers encodec` | stereo |
+| 9 | `soundstream_16khz` | 16 kHz | `pip install soundstream` ⚠️ | mono |
+| 10 | `speechtokenizer` | 16 kHz | pip + manual checkpoint | mono |
+| — | `FunCodec` | 16 kHz | external repo | — |
+| — | `AudioDec` | 24 / 48 kHz | external repo | — |
+
+> ⚠️ **SoundStream** (`soundstream==0.0.1`) pins `numpy<2.0` and `huggingface-hub<0.16`.
+> After installing it, run `pip install --upgrade huggingface-hub` to keep EnCodec working.
+> For a fully clean setup, use a dedicated virtual environment for SoundStream.
+
+All model weights download automatically from HuggingFace on first use (except SpeechTokenizer — see [below](#10--speechtokenizer)).
+
+---
+
+## Project Structure
+
 ```
+Neural-Codecs/
+├── audio_codec/
+│   ├── config.py          ← AUTO_INSTALL_DEPS flag lives here
+│   ├── registry.py        ← codec metadata (packages, import checks, hub names)
+│   ├── installer.py       ← dep-check, auto-install, setup commands
+│   ├── cli.py             ← neural-codec CLI entry point
+│   └── codecs/
+│       ├── snac.py
+│       ├── dac.py
+│       ├── encodec24.py
+│       ├── encodec48.py
+│       ├── soundstream.py
+│       └── speechtokenizer.py
+├── requirements/
+│   ├── base.txt           ← torch, torchaudio, soundfile, numpy, tqdm
+│   ├── snac.txt           ← IDs 1–3
+│   ├── dac.txt            ← IDs 4–6
+│   ├── encodec.txt        ← IDs 7–8
+│   ├── soundstream.txt    ← ID 9
+│   └── speechtokenizer.txt← ID 10
+├── config/
+│   └── config.json        ← SpeechTokenizer model config
+├── checkpoints/           ← place SpeechTokenizer.pt here
+├── audio_sample/          ← put your input WAV files here
+└── pyproject.toml
+```
+
+---
+
+## Installation
+
+```bash
 git clone https://github.com/CodeVault-girish/NeuralCodecDecoder.git
 cd NeuralCodecDecoder
-```
-## Recomend create seprate env for each codec model
-```
-from audio_codec.registry import CODEC_REGISTRY
-from audio_codec.cli import decoder_list, decode_folder
-```
-
-# list available
-
-```
-decoder_list()
-```
-
----
-# Supported Models codec
-## Available decoders
-
-The following codec decoders are available in this repository:
-
-1. **snac_24khz**  
-2. **snac_32khz**  
-3. **snac_44khz**  
-4. **dac_16khz**  
-5. **dac_24khz**  
-6. **dac_44khz**  
-7. **encodec_24khz**  
-8. **encodec_48khz**  
-9. **soundstream_16khz**  
-10. **speechtokenizer**
-11. **Funcodec**
-12. **AudioDec**
-```
-decode_folder('2', 'raw_wavs', 'decoded', 'cpu')
-decode_folder('10', '/home/girish/Girish/Reseach/Health-care/Audio_Data/Audio_Data/HC', 'output/', 'cuda')
-```
----
----
-# For SpeechTokenizer 
-## use this link to get it's model 
-
-[fnlp/SpeechTokenizer model](https://huggingface.co/fnlp/SpeechTokenizer/tree/main/speechtokenizer_hubert_avg)
-
-Add this model file as follows:
-
-```
-NeuralCodecDecoder/
-  audio_codec/
-    codecs/
-  config/
-    config.json
-  checkpoints/
-    SpeechTokenizer.pt
-```
-
-Place the downloaded `SpeechTokenizer.pt` file into the `checkpoints/` directory as shown above.
-
-```
-pip install --upgrade pip setuptools wheel
-pip install --only-binary=:all: tokenizers
-
-pip install git+https://github.com/ga642381/AudioCodec-Hub.git soundfile
-```
-additional
-```
-pip install --no-deps --force-reinstall git+https://github.com/ga642381/AudioCodec-Hub.git soundfile
-```
----
----
-## For Funcodec
-```
-python3 -m venv funcodec
-source funcodec/bin/activate
-```
-```
-git clone https://github.com/alibaba-damo-academy/FunCodec.git
-cd FunCodec
 pip install -e .
 ```
+
+This registers the `neural-codec` CLI command. Base dependencies (`torch`, `torchaudio`,
+`soundfile`, `tqdm`) are installed automatically. Per-codec packages are installed on demand.
+
+---
+
+## Auto-Install
+
+Missing codec dependencies are **installed automatically** the first time you run a codec.
+
+Controlled by one flag in `audio_codec/config.py`:
+
+```python
+# audio_codec/config.py
+
+AUTO_INSTALL_DEPS = True   # auto-install missing packages before decoding (default)
+AUTO_INSTALL_DEPS = False  # print the install command and exit instead
 ```
+
+| Value | Behaviour |
+|-------|-----------|
+| `True` | First `decode_folder()` call installs any missing packages, then runs. No manual setup needed. |
+| `False` | Prints the missing packages and exact `pip install` / `neural-codec setup` command, then exits cleanly. |
+
+---
+
+## Quick Start
+
+```bash
+# 1. See all codecs with live install status
+neural-codec list
+
+# 2. Decode a folder — auto-installs deps on first run (AUTO_INSTALL_DEPS=True)
+neural-codec decode --codec snac_24khz --input ./audio_sample --output ./out
+
+# 3. Use a different codec
+neural-codec decode --codec dac_16khz    --input ./audio_sample --output ./out
+neural-codec decode --codec encodec_24khz --input ./audio_sample --output ./out
+
+# 4. Use GPU
+neural-codec decode --codec snac_24khz --input ./audio_sample --output ./out --device cuda
+
+# 5. Use codec by numeric ID instead of name
+neural-codec decode --codec 7 --input ./audio_sample --output ./out
+
+# 6. Pre-install deps without decoding
+neural-codec setup --codec snac_24khz
+neural-codec setup --all
+```
+
+---
+
+## CLI Reference
+
+### `neural-codec list`
+
+Shows every codec — ID, name, sample rate, install status, and required packages.
+Also shows whether `AUTO_INSTALL_DEPS` is currently enabled.
+
+```
+neural-codec list
+```
+
+---
+
+### `neural-codec setup`
+
+Install dependencies for a codec without running it.
+
+```bash
+neural-codec setup --codec snac_24khz       # install by name
+neural-codec setup --codec 1                # install by ID
+neural-codec setup --all                    # install all pip-installable codecs
+
+# External codecs — prints manual setup steps
+neural-codec setup --codec funcodec
+neural-codec setup --codec audiodec
+```
+
+---
+
+### `neural-codec decode`
+
+Batch encode/decode all WAV files in a folder (recursive).
+
+```bash
+neural-codec decode --codec <NAME_OR_ID> --input <DIR> --output <DIR> [--device cpu|cuda]
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--codec` | yes | Codec name (`snac_24khz`) or numeric ID (`1`) |
+| `--input` | yes | Folder with `.wav` files (searched recursively) |
+| `--output` | yes | Folder where decoded files are written |
+| `--device` | no | `cpu` (default) or `cuda` |
+
+Output files are named `<original_stem>_<codec_name>.wav`.
+
+---
+
+## Python API
+
+```python
+from audio_codec import decode_folder, decoder_list, setup_codec, setup_all
+
+# show all codecs and their install status
+decoder_list()
+
+# decode a folder (auto-installs deps if AUTO_INSTALL_DEPS=True)
+decode_folder("1",           "audio_sample/", "out/", "cpu")   # by ID
+decode_folder("snac_24khz",  "audio_sample/", "out/", "cuda")  # by name
+
+# explicitly install before decoding
+setup_codec("snac_24khz")
+setup_all()
+
+# check if a codec's deps are satisfied (no side effects)
+from audio_codec import deps_satisfied
+from audio_codec.registry import CODEC_REGISTRY
+print(deps_satisfied(CODEC_REGISTRY["7"]))  # True / False
+```
+
+---
+
+## Per-Codec Requirements
+
+### 1 · 2 · 3 — SNAC
+
+**Models:** `snac_24khz` · `snac_32khz` · `snac_44khz`
+**Weights:** auto-download from HuggingFace (~30–80 MB each)
+
+```bash
+# requirements file
+pip install -r requirements/snac.txt
+
+# or via CLI
+neural-codec setup --codec snac_24khz
+```
+
+| Package | Notes |
+|---------|-------|
+| `snac` | SNAC model |
+| `torchaudio` | resampling |
+| `soundfile` | WAV I/O |
+
+```bash
+neural-codec decode --codec snac_24khz --input ./wavs --output ./out
+neural-codec decode --codec snac_32khz --input ./wavs --output ./out
+neural-codec decode --codec snac_44khz --input ./wavs --output ./out
+```
+
+---
+
+### 4 · 5 · 6 — DAC (Descript Audio Codec)
+
+**Models:** `dac_16khz` · `dac_24khz` · `dac_44khz`
+**Weights:** auto-download via `dac.utils.download()` (~75 MB each)
+
+```bash
+pip install -r requirements/dac.txt
+
+neural-codec setup --codec dac_16khz
+```
+
+| Package | Notes |
+|---------|-------|
+| `descript-audio-codec` | DAC model + bundles `audiotools` |
+| `soundfile` | WAV I/O |
+
+```bash
+neural-codec decode --codec dac_16khz --input ./wavs --output ./out
+neural-codec decode --codec dac_24khz --input ./wavs --output ./out
+neural-codec decode --codec dac_44khz --input ./wavs --output ./out
+```
+
+---
+
+### 7 · 8 — EnCodec (Facebook)
+
+**Models:** `encodec_24khz` (mono) · `encodec_48khz` (stereo)
+**Weights:** auto-download from HuggingFace
+
+```bash
+pip install -r requirements/encodec.txt
+
+neural-codec setup --codec encodec_24khz
+```
+
+| Package | Notes |
+|---------|-------|
+| `transformers` | HuggingFace model loader |
+| `encodec` | EnCodec core |
+| `soundfile` | WAV I/O |
+
+```bash
+neural-codec decode --codec encodec_24khz --input ./wavs --output ./out  # mono, 24 kHz
+neural-codec decode --codec encodec_48khz --input ./wavs --output ./out  # stereo, 48 kHz
+```
+
+---
+
+### 9 — SoundStream
+
+**Model:** `soundstream_16khz`
+**Weights:** auto-download from HuggingFace (`naturalspeech2.pt`, ~143 MB)
+
+```bash
+pip install -r requirements/soundstream.txt
+
+# After installing, restore a newer huggingface-hub so EnCodec still works:
+pip install --upgrade huggingface-hub
+
+neural-codec setup --codec soundstream_16khz
+```
+
+| Package | Version | Notes |
+|---------|---------|-------|
+| `soundstream` | 0.0.1 | pins `numpy<2.0` and `huggingface-hub<0.16` |
+| `soundfile` | latest | WAV I/O |
+
+> **Dependency conflict with EnCodec:** `soundstream==0.0.1` forces `huggingface-hub<0.16`,
+> which breaks `transformers`. Fix: after installing soundstream, run
+> `pip install --upgrade huggingface-hub`. Both codecs then work in the same environment.
+> For a fully isolated setup, use a dedicated virtual environment:
+
+```bash
+python -m venv venv_soundstream
+venv_soundstream\Scripts\activate         # Windows
+source venv_soundstream/bin/activate      # Linux / Mac
+
+pip install -r requirements/soundstream.txt
+neural-codec decode --codec soundstream_16khz --input ./wavs --output ./out
+```
+
+---
+
+### 10 — SpeechTokenizer
+
+**Model:** `speechtokenizer` (16 kHz)
+**Weights:** manual download required
+
+```bash
+pip install -r requirements/speechtokenizer.txt
+```
+
+| Package | Notes |
+|---------|-------|
+| `speechtokenizer` | model loader |
+| `beartype` | required runtime dependency of speechtokenizer |
+| `soundfile` | WAV I/O |
+
+**The pip packages alone are not enough — you must also download the checkpoint manually.**
+
+**Step 1 — Install packages:**
+```bash
+neural-codec setup --codec speechtokenizer
+```
+
+**Step 2 — Download both files** from HuggingFace:
+
+> [fnlp/SpeechTokenizer → speechtokenizer_hubert_avg](https://huggingface.co/fnlp/SpeechTokenizer/tree/main/speechtokenizer_hubert_avg)
+
+Place them at these exact paths:
+
+```
+Neural-Codecs/
+  checkpoints/
+    SpeechTokenizer.pt     ← download from HuggingFace
+  config/
+    config.json            ← download from HuggingFace
+```
+
+**Step 3 — Decode:**
+```bash
+neural-codec decode --codec speechtokenizer --input ./wavs --output ./out
+```
+
+> If the checkpoint is missing the CLI prints the exact download URL and expected path — no silent failures.
+
+---
+
+### FunCodec (external)
+
+Requires its own virtual environment due to dependency conflicts.
+
+```bash
+# Print full step-by-step instructions
+neural-codec setup --codec funcodec
+```
+
+Manual summary:
+
+```bash
+python -m venv funcodec
+funcodec\Scripts\activate                     # Windows
+source funcodec/bin/activate                  # Linux / Mac
+
+git clone https://github.com/alibaba-damo-academy/FunCodec.git
+cd FunCodec && pip install -e .
 pip install torch torchaudio numpy soundfile
-```
-```
-cd egs/LibriTTS/codec
-mkdir -p exp
-model_name="audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch"
-# Download the model
+
+cd egs/LibriTTS/codec && mkdir -p exp
 git lfs install
-git clone https://huggingface.co/alibaba-damo/${model_name}
+git clone https://huggingface.co/alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch \
+    exp/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch
 ```
-## folder path
+
+**Build input list:**
+```bash
+find /path/to/wavs -name "*.wav" \
+  | awk -F/ '{printf "%s %s\n", $(NF-1)"_"$NF, $0}' > input.scp
 ```
-find ../../../../../Girish/Reseach/Health-care/Audio_Data/Audio_Data/HC/  -name "*.wav" | awk -F/ '{printf "%s %s\n", $(NF-1) "_" $NF, $0}' > input.scp
-```
-# Encoding
-```
-model_name=audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch
+
+**Encode:**
+```bash
+model=audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch
 bash encoding_decoding.sh \
-  --stage 1 \
-  --batch_size 1 \
-  --num_workers 1 \
-  --gpu_devices "0" \
-  --model_dir exp/${model_name} \
-  --bit_width 16000 \
-  --file_sampling_rate 16000 \
-  --wav_scp input.scp \
-  --out_dir outputs/codecs
+  --stage 1 --batch_size 1 --num_workers 1 --gpu_devices 0 \
+  --model_dir exp/${model} --bit_width 16000 --file_sampling_rate 16000 \
+  --wav_scp input.scp --out_dir outputs/codecs
 ```
-# Decoding
-```
-model_name=audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch
+
+**Decode:**
+```bash
 bash encoding_decoding.sh \
-  --stage 2 \
-  --batch_size 1 \
-  --num_workers 1 \
-  --gpu_devices "0" \
-  --model_dir exp/${model_name} \
-  --bit_width 16000 \
-  --file_sampling_rate 16000 \
-  --wav_scp outputs/codecs/codecs.txt \
-  --out_dir outputs/recon_wavs
+  --stage 2 --batch_size 1 --num_workers 1 --gpu_devices 0 \
+  --model_dir exp/${model} --bit_width 16000 --file_sampling_rate 16000 \
+  --wav_scp outputs/codecs/codecs.txt --out_dir outputs/recon_wavs
 ```
 
 ---
----
-# AudioDec
 
-## take AudioDec.py file from this repo and paste in 
+### AudioDec (external)
+
+```bash
+# Print full step-by-step instructions
+neural-codec setup --codec audiodec
 ```
+
+Manual summary:
+
+```bash
 git clone https://github.com/facebookresearch/AudioDec.git
-cd AudioDec
-pip install -r requirements.txt
+cd AudioDec && pip install -r requirements.txt
 ```
-## Download this [exp](https://github.com/facebookresearch/AudioDec/releases/download/pretrain_models_v02/exp.zip) and save in this
 
-<!-- python demoFile.py --model vctk_v1  -i ../codec/test/ -o output/
-python demoFile.py --model libritts_v1 -i ../codec/test/ -o output/
-python demoFile.py --model libritts_v1 -i ../codec/test/A002_02_BBP_NORMAL.wav -o output.wav
+Download [exp.zip](https://github.com/facebookresearch/AudioDec/releases/download/pretrain_models_v02/exp.zip),
+extract into `AudioDec/`, then copy `AudioDec.py` from this repo into `AudioDec/`.
 
- -->
-## Usage
+```bash
+# Encode + decode
+python AudioDec.py --model libritts_v1 -i input/ -o output/   # 24 kHz
+python AudioDec.py --model vctk_v1     -i input/ -o output/   # 48 kHz
+```
 
-### 1. Single-file mode
-
-- **With GPU** (e.g., CUDA device 0)  
-  ```
-  python AudioDec.py \\
-    --model libritts_v1 \\
-    -i path/to/input.wav \\
-    -o path/to/output.wav
-  ```
-
-- **With CPU only**  
-  ```
-  python AudioDec.py \\
-    --cuda -1 \\
-    --model vctk_v1 \\
-    -i path/to/input.wav \\
-    -o path/to/output.wav
-  ```
-
-### 2. Folder mode
-
-- **With GPU**  
-  ```
-  python AudioDec.py \\
-    --model vctk_v1 \\
-    -i path/to/input_folder \\
-    -o path/to/output_folder
-  ```
-
-- **With CPU only**  
-  ```
-  python AudioDec.py \\
-    --cuda -1 \\
-    --model libritts_v1 \\
-    -i path/to/input_folder \\
-    -o path/to/output_folder
-  ```
+| Model | Sample Rate |
+|-------|-------------|
+| `libritts_v1` | 24 kHz |
+| `vctk_v1` | 48 kHz |
