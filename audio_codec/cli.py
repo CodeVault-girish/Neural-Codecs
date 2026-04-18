@@ -8,7 +8,7 @@ import torch
 from tqdm import tqdm
 from .registry import CODEC_REGISTRY, EXTERNAL_CODECS
 from .config import AUTO_INSTALL_DEPS
-from .installer import ensure_deps
+from .installer import ensure_deps, deps_satisfied
 
 _LINE  = "-" * 60
 _DLINE = "=" * 60
@@ -32,8 +32,7 @@ def decoder_list():
     for key, info in sorted(CODEC_REGISTRY.items(), key=lambda x: int(x[0])):
         sr     = f"{info['sample_rate'] // 1000} kHz" if info["sample_rate"] else "variable"
         pkgs   = ", ".join(info.get("pip_packages", []))
-        status = "installed" if ensure_deps(info, auto_install=False) else "not installed"
-        # suppress the "missing" print during list — just capture return value silently
+        status = "installed" if deps_satisfied(info) else "not installed"
         print(f"  {key:<5} {info['name']:<24} {sr:<12} {status:<12} {pkgs}")
 
     print(f"\n  {'-'*5} {'-'*24}")
