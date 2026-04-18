@@ -1,7 +1,27 @@
+# core (always needed)
 torch
 torchaudio
 soundfile
-snac
 tqdm
-beartype
-# pip install -U encodec
+
+# SNAC (codecs 1-3)
+snac
+
+# DAC (codecs 4-6)
+descript-audio-codec
+audiotools
+
+# Encodec (codecs 7-8)
+transformers
+encodec
+
+# SoundStream (codec 9)
+# pip install git+https://github.com/ga642381/AudioCodec-Hub.git
+
+# SpeechTokenizer (codec 10)
+speechtokenizer
+# Also download checkpoint manually:
+#   https://huggingface.co/fnlp/SpeechTokenizer/tree/main/speechtokenizer_hubert_avg
+#   → place at checkpoints/SpeechTokenizer.pt
+
+# FunCodec & AudioDec: see `neural-codec setup --codec funcodec / audiodec`

@@ -1,3 +1,14 @@
+Metadata-Version: 2.4
+Name: neural-codecs
+Version: 0.1.0
+Summary: Pipeline library for neural audio codec encode/decode — batch WAV processing for dataset creation
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: torch
+Requires-Dist: torchaudio
+Requires-Dist: soundfile
+Requires-Dist: tqdm
+
 # Neural Codecs
 
 A pipeline library for batch **encode → decode** round-trips through neural audio codec models.

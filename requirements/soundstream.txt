@@ -1,0 +1,18 @@
+# SoundStream — ID 9  (16 kHz)
+# Uses the lucidrains/soundstream PyTorch implementation.
+# Model weights (~143 MB) download automatically on first use.
+#
+# WARNING: This package pins numpy<2.0 and huggingface-hub<0.16.
+# These versions conflict with newer Encodec/Transformers installs.
+# Recommended: use a dedicated virtual environment for SoundStream alone.
+#
+#   python -m venv venv_soundstream
+#   venv_soundstream\Scripts\activate       (Windows)
+#   source venv_soundstream/bin/activate    (Linux/Mac)
+#   pip install -r requirements/soundstream.txt
+#
+# Or via CLI:
+#   neural-codec setup --codec soundstream_16khz
+
+-r base.txt
+soundstream

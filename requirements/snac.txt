@@ -1,0 +1,11 @@
+# SNAC — Codec IDs 1, 2, 3  (24 kHz / 32 kHz / 44 kHz)
+# Model weights download automatically from HuggingFace on first use.
+#
+# Install:
+#   pip install -r requirements/snac.txt
+#
+# Or via CLI:
+#   neural-codec setup --codec snac_24khz
+
+-r base.txt
+snac

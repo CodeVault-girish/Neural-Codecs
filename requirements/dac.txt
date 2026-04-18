@@ -1,0 +1,12 @@
+# DAC — Descript Audio Codec — IDs 4, 5, 6  (16 kHz / 24 kHz / 44 kHz)
+# audiotools is bundled inside descript-audio-codec — no separate install needed.
+# Model weights download automatically on first use.
+#
+# Install:
+#   pip install -r requirements/dac.txt
+#
+# Or via CLI:
+#   neural-codec setup --codec dac_16khz
+
+-r base.txt
+descript-audio-codec

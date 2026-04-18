@@ -1,0 +1,2 @@
+[console_scripts]
+neural-codec = audio_codec.cli:main
