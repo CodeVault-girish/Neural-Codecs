@@ -134,7 +134,7 @@ def setup_codec(name_or_id: str):
 
 def setup_all():
     print(_DLINE)
-    print(" Neural Codecs — Full Setup")
+    print(" Neural Codecs - Full Setup")
     print(_DLINE)
 
     seen: set  = set()
