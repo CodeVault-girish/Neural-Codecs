@@ -3,6 +3,5 @@ checkpoints/
 snac/
 audio_output_test/
 audio_output/
-audio_sample/
 out/
 venv/
