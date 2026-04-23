@@ -57,9 +57,10 @@ def _gen_wav_paths(in_dir: str):
                 yield os.path.join(root, fn)
 
 
-def decode_folder(decoder_id: str, in_dir: str, out_dir: str, device_str: str):
-    if decoder_id not in CODEC_REGISTRY:
-        print(f"Unknown decoder ID {decoder_id!r}. Run `neural-codec list`.")
+def decode_folder(name_or_id: str, in_dir: str, out_dir: str, device_str: str):
+    decoder_id = _resolve_id(name_or_id)
+    if decoder_id is None:
+        print(f"Unknown codec: {name_or_id!r}. Run `neural-codec list`.")
         return
 
     info = CODEC_REGISTRY[decoder_id]
