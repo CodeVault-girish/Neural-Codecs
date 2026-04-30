@@ -151,18 +151,24 @@ CODEC_REGISTRY = {
     },
 }
 
-# Codecs that require cloning external repos — cannot be pip-installed
+# Codecs that require a separate working directory — cannot be run via the neural-codec CLI
 EXTERNAL_CODECS = {
     "audiodec": {
         "name": "AudioDec",
         "steps": [
+            "The AudioDec/ folder, checkpoints, and audiodec/ venv are already included in this repo.",
+            "Windows : cd AudioDec && audiodec\\Scripts\\python AudioDec.py --model libritts_v1 --cuda -1 -i ..\\audio_sample\\ -o ..\\out\\",
+            "Linux   : cd AudioDec && source audiodec/bin/activate && python AudioDec.py --model libritts_v1 --cuda -1 -i ../audio_sample/ -o ../out/",
+            "--- If AudioDec/ is missing, do a fresh setup: ---",
             "git clone https://github.com/facebookresearch/AudioDec.git",
-            "cd AudioDec && pip install -r requirements.txt",
-            "Download exp.zip: https://github.com/facebookresearch/AudioDec/releases/download/pretrain_models_v02/exp.zip",
-            "Extract exp.zip into AudioDec/  (you should have AudioDec/exp/...)",
-            "Copy AudioDec.py from this repo into AudioDec/",
+            "cd AudioDec && python -m venv audiodec && audiodec\\Scripts\\activate  (Windows)",
+            "pip install -r requirements.txt",
+            "Download exp.zip from: https://github.com/facebookresearch/AudioDec/releases/download/pretrain_models_v02/exp.zip",
+            "Extract exp.zip into AudioDec/  (gives AudioDec/exp/autoencoder/... and AudioDec/exp/vocoder/...)",
+            "Copy AudioDec.py from this repo's root into AudioDec/",
         ],
-        "encode_usage": "python AudioDec.py --model libritts_v1 -i input/ -o output/",
-        "decode_usage": "python AudioDec.py --model vctk_v1    -i input/ -o output/",
+        "encode_usage": "cd AudioDec && audiodec\\Scripts\\python AudioDec.py --model libritts_v1 --cuda -1 -i input/ -o output/",
+        "decode_usage": "cd AudioDec && audiodec\\Scripts\\python AudioDec.py --model vctk_v1    --cuda -1 -i input/ -o output/",
+        "scp_note": "Models: libritts_v1 (24 kHz), vctk_v1 (48 kHz). Output: <stem>_AudioDec_<model>_<khz>khz.wav",
     },
 }

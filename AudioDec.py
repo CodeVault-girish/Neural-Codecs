@@ -23,7 +23,7 @@ def process_file(audiodec, sample_rate, model_name, suffix, tx_device, filepath,
     data, fs = sf.read(filepath, always_2d=True)
 
     if fs != sample_rate:
-        print(f"[{os.path.basename(filepath)}] Resampling {fs}→{sample_rate} Hz...")
+        print(f"[{os.path.basename(filepath)}] Resampling {fs}->{sample_rate} Hz...")
         data = np.stack([
             librosa.resample(data[:, ch], orig_sr=fs, target_sr=sample_rate)
             for ch in range(data.shape[1])
@@ -44,7 +44,7 @@ def process_file(audiodec, sample_rate, model_name, suffix, tx_device, filepath,
     out_filename = f"{base}_AudioDec_{model_name}_{suffix}.wav"
     out_path = os.path.join(out_dir, out_filename)
     sf.write(out_path, y, fs, "PCM_16")
-    print(f"[{os.path.basename(filepath)}] → {out_path}")
+    print(f"[{os.path.basename(filepath)}] -> {out_path}")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -72,7 +72,7 @@ def main():
     suffix = f"{khz}khz"
     model_name = args.model
 
-    print("AudioDec initializing…")
+    print("AudioDec initializing...")
     audiodec = AudioDec(tx_device=tx_device, rx_device=rx_device)
     audiodec.load_transmitter(enc_ckpt)
     audiodec.load_receiver(enc_ckpt, dec_ckpt)
@@ -99,7 +99,10 @@ def main():
         if not os.path.exists(inp):
             raise ValueError(f"Input {inp} does not exist")
 
-        # if output is a directory, drop into it
+        # if output is (or should be) a directory, drop into it
+        if not outp.lower().endswith(".wav"):
+            os.makedirs(outp, exist_ok=True)
+
         if os.path.isdir(outp):
             process_file(
                 audiodec, sample_rate,
@@ -113,7 +116,7 @@ def main():
         else:
             data, fs = sf.read(inp, always_2d=True)
             if fs != sample_rate:
-                print(f"Resampling {fs}→{sample_rate} Hz…")
+                print(f"Resampling {fs}->{sample_rate} Hz...")
                 data = np.stack([
                     librosa.resample(data[:, ch], orig_sr=fs, target_sr=sample_rate)
                     for ch in range(data.shape[1])

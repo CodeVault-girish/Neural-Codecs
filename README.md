@@ -21,7 +21,7 @@ codec-distorted datasets, evaluating codec quality, or preprocessing audio for T
 | 9 | `soundstream_16khz` | 16 kHz | `pip install soundstream` ⚠️ | mono |
 | 10 | `speechtokenizer` | 16 kHz | pip + manual checkpoint | mono |
 | 11 | `funcodec_16khz` | 16 kHz | dedicated venv ⚠️ | mono |
-| — | `AudioDec` | 24 / 48 kHz | external repo | — |
+| — | `AudioDec` | 24 / 48 kHz | included venv ⚠️ | mono/stereo |
 
 > ⚠️ **SoundStream** (`soundstream==0.0.1`) pins `numpy<2.0` and `huggingface-hub<0.16`.
 > After installing it, run `pip install --upgrade huggingface-hub` to keep EnCodec working.
@@ -30,7 +30,10 @@ codec-distorted datasets, evaluating codec quality, or preprocessing audio for T
 > ⚠️ **FunCodec** requires a dedicated virtual environment — its dependencies conflict with
 > other codecs. A pre-configured `funcodec/` venv is included in this repo. See [below](#11--funcodec).
 
-All model weights download automatically from HuggingFace on first use (except SpeechTokenizer — see [below](#10--speechtokenizer)).
+> ⚠️ **AudioDec** requires its own venv (`AudioDec/audiodec/`) and must be run from the `AudioDec/`
+> directory. The repo, checkpoints, and venv are already included. See [below](#audiodec-external).
+
+All model weights download automatically from HuggingFace on first use (except SpeechTokenizer — see [below](#10--speechtokenizer)). AudioDec checkpoints are already bundled in `AudioDec/exp/`.
 
 ---
 
@@ -467,28 +470,75 @@ Output files are now correctly named `<stem>_funcodec_16khz.wav`.
 
 ### AudioDec (external)
 
+**Status:** The `AudioDec/` repo and checkpoints are already included in this repo.
+A dedicated `AudioDec/audiodec/` venv is pre-configured with all required packages.
+
+#### Quick Start (using the included setup)
+
 ```bash
-# Print full step-by-step instructions
-neural-codec setup --codec audiodec
+# Windows — run from inside the AudioDec/ folder
+cd AudioDec
+audiodec\Scripts\python AudioDec.py --model libritts_v1 --cuda -1 -i ..\audio_sample\ -o ..\out\
+
+# Linux / Mac
+cd AudioDec
+source audiodec/bin/activate
+python AudioDec.py --model libritts_v1 --cuda -1 -i ../audio_sample/ -o ../out/
 ```
 
-Manual summary:
+#### CLI flags
+
+| Flag | Description |
+|------|-------------|
+| `--model` | Model name (see table below) |
+| `-i` / `--input` | Input WAV file or directory |
+| `-o` / `--output` | Output WAV file or directory |
+| `--cuda` | CUDA device index, or `-1` for CPU (default: 0) |
+
+#### Models
+
+| Model | Sample Rate | Notes |
+|-------|-------------|-------|
+| `libritts_v1` | 24 kHz | English speech |
+| `vctk_v1` | 48 kHz | Multi-speaker speech |
+| `vctk_v0` | 48 kHz | Earlier checkpoint |
+| `vctk_v2` | 48 kHz | Later checkpoint |
+
+Output files are named `<stem>_AudioDec_<model>_<khz>khz.wav`.
+
+#### Fresh setup (if the AudioDec/ folder is missing)
 
 ```bash
 git clone https://github.com/facebookresearch/AudioDec.git
-cd AudioDec && pip install -r requirements.txt
+cd AudioDec
+
+python -m venv audiodec
+audiodec\Scripts\activate          # Windows
+source audiodec/bin/activate       # Linux / Mac
+
+pip install -r requirements.txt
 ```
 
 Download [exp.zip](https://github.com/facebookresearch/AudioDec/releases/download/pretrain_models_v02/exp.zip),
-extract into `AudioDec/`, then copy `AudioDec.py` from this repo into `AudioDec/`.
+extract into `AudioDec/` so you have `AudioDec/exp/autoencoder/...` and `AudioDec/exp/vocoder/...`.
 
-```bash
-# Encode + decode
-python AudioDec.py --model libritts_v1 -i input/ -o output/   # 24 kHz
-python AudioDec.py --model vctk_v1     -i input/ -o output/   # 48 kHz
+Copy `AudioDec.py` from this repo's root into `AudioDec/` (it fixes two Windows bugs — see below).
+
+#### Known bugs fixed
+
+**Bug 1 — Unicode characters crash on Windows**
+
+The original `AudioDec.py` uses `→` and `…` in print statements. On Windows these trigger a
+`UnicodeEncodeError` on cp1252 terminals. Fixed by replacing them with plain ASCII (`->`, `...`).
+
+**Bug 2 — Output directory not created for single-file input**
+
+When passing a single input file with a non-existent output directory, `os.path.isdir` returns
+False and the code tries to write to the directory path as if it were a `.wav` filename:
+
+```
+TypeError: No format specified and unable to get format from file extension: '../out/'
 ```
 
-| Model | Sample Rate |
-|-------|-------------|
-| `libritts_v1` | 24 kHz |
-| `vctk_v1` | 48 kHz |
+Fixed: if the output path does not end with `.wav`, it is created as a directory automatically
+before the `os.path.isdir` check.
