@@ -1,8 +1,10 @@
 # audio_codec/registry.py
 #
-# pip_packages  — packages passed to `pip install`
-# import_checks — module names verified via importlib.util.find_spec()
-#                 (pip dist name != import name for some packages, e.g. dac/audiotools)
+# pip_packages     — packages passed to `pip install`
+# import_checks    — module names verified via importlib.util.find_spec()
+#                    (pip dist name != import name for some packages, e.g. dac/audiotools)
+# pip_no_deps      — packages that must be installed with --no-deps first
+#                    (used by funcodec to avoid editdistance build failure on Python 3.14+)
 
 CODEC_REGISTRY = {
     # ─── SNAC variants ───
@@ -118,37 +120,39 @@ CODEC_REGISTRY = {
             "  Save: config/config.json",
         ],
     },
+
+    # ─── FunCodec ───
+    # funcodec is installed with --no-deps to skip editdistance, which fails to build
+    # on Python 3.14+.  editdistance is only used for WER/CER scoring, not inference.
+    # Weights (~150 MB) download automatically from HuggingFace on first use.
+    # Recommended: use the dedicated funcodec/ venv (already configured in this repo).
+    "11": {
+        "name":          "funcodec_16khz",
+        "module":        "audio_codec.codecs.funcodec_decoder",
+        "class":         "FunCodecDecoder",
+        "hub_name":      "alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch",
+        "sample_rate":   16000,
+        "pip_no_deps":   ["funcodec"],
+        "pip_packages":  [
+            "huggingface_hub", "librosa", "kaldiio", "einops",
+            "thop", "six", "pytorch-wpe", "torch-complex",
+            "humanfriendly", "h5py",
+            "typeguard==2.13.3",
+        ],
+        "import_checks": ["funcodec", "huggingface_hub", "librosa", "kaldiio",
+                          "einops", "thop", "humanfriendly", "h5py"],
+        "install_notes": [
+            "funcodec is installed with --no-deps (skips editdistance, not needed for inference).",
+            "Recommended: activate the dedicated venv before running:",
+            "  Windows : funcodec\\Scripts\\activate",
+            "  Linux   : source funcodec/bin/activate",
+            "  Then run: neural-codec decode --codec funcodec_16khz --input ./wavs --output ./out",
+        ],
+    },
 }
 
 # Codecs that require cloning external repos — cannot be pip-installed
 EXTERNAL_CODECS = {
-    "funcodec": {
-        "name": "FunCodec",
-        "steps": [
-            "python -m venv funcodec",
-            "funcodec\\Scripts\\activate   (Windows)  OR  source funcodec/bin/activate  (Linux/Mac)",
-            "git clone https://github.com/alibaba-damo-academy/FunCodec.git",
-            "cd FunCodec && pip install -e .",
-            "pip install torch torchaudio numpy soundfile",
-            "cd egs/LibriTTS/codec && mkdir -p exp",
-            "git lfs install",
-            "git clone https://huggingface.co/alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch exp/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch",
-        ],
-        "encode_usage": (
-            "bash encoding_decoding.sh --stage 1 --batch_size 1 --num_workers 1 "
-            "--gpu_devices 0 --model_dir exp/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch "
-            "--bit_width 16000 --file_sampling_rate 16000 --wav_scp input.scp --out_dir outputs/codecs"
-        ),
-        "decode_usage": (
-            "bash encoding_decoding.sh --stage 2 --batch_size 1 --num_workers 1 "
-            "--gpu_devices 0 --model_dir exp/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch "
-            "--bit_width 16000 --file_sampling_rate 16000 --wav_scp outputs/codecs/codecs.txt --out_dir outputs/recon_wavs"
-        ),
-        "scp_note": (
-            "Build input.scp with:\n"
-            '  find /path/to/wavs -name "*.wav" | awk -F/ \'{printf "%s %s\\n", $(NF-1)"_"$NF, $0}\' > input.scp'
-        ),
-    },
     "audiodec": {
         "name": "AudioDec",
         "steps": [
