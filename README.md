@@ -20,12 +20,15 @@ codec-distorted datasets, evaluating codec quality, or preprocessing audio for T
 | 8 | `encodec_48khz` | 48 kHz | `pip install transformers encodec` | stereo |
 | 9 | `soundstream_16khz` | 16 kHz | `pip install soundstream` ⚠️ | mono |
 | 10 | `speechtokenizer` | 16 kHz | pip + manual checkpoint | mono |
-| — | `FunCodec` | 16 kHz | external repo | — |
+| 11 | `funcodec_16khz` | 16 kHz | dedicated venv ⚠️ | mono |
 | — | `AudioDec` | 24 / 48 kHz | external repo | — |
 
 > ⚠️ **SoundStream** (`soundstream==0.0.1`) pins `numpy<2.0` and `huggingface-hub<0.16`.
 > After installing it, run `pip install --upgrade huggingface-hub` to keep EnCodec working.
 > For a fully clean setup, use a dedicated virtual environment for SoundStream.
+
+> ⚠️ **FunCodec** requires a dedicated virtual environment — its dependencies conflict with
+> other codecs. A pre-configured `funcodec/` venv is included in this repo. See [below](#11--funcodec).
 
 All model weights download automatically from HuggingFace on first use (except SpeechTokenizer — see [below](#10--speechtokenizer)).
 
@@ -46,14 +49,16 @@ Neural-Codecs/
 │       ├── encodec24.py
 │       ├── encodec48.py
 │       ├── soundstream.py
-│       └── speechtokenizer.py
+│       ├── speechtokenizer.py
+│       └── funcodec_decoder.py
 ├── requirements/
 │   ├── base.txt           ← torch, torchaudio, soundfile, numpy, tqdm
 │   ├── snac.txt           ← IDs 1–3
 │   ├── dac.txt            ← IDs 4–6
 │   ├── encodec.txt        ← IDs 7–8
 │   ├── soundstream.txt    ← ID 9
-│   └── speechtokenizer.txt← ID 10
+│   ├── speechtokenizer.txt← ID 10
+│   └── funcodec.txt       ← ID 11  (use inside funcodec/ venv)
 ├── config/
 │   └── config.json        ← SpeechTokenizer model config
 ├── checkpoints/           ← place SpeechTokenizer.pt here
@@ -351,54 +356,112 @@ neural-codec decode --codec speechtokenizer --input ./wavs --output ./out
 
 ---
 
-### FunCodec (external)
+### 11 — FunCodec
 
-Requires its own virtual environment due to dependency conflicts.
+**Model:** `funcodec_16khz` (16 kHz, mono)
+**Weights:** auto-download from HuggingFace (`alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch`, ~150 MB)
+
+FunCodec must run in its own virtual environment. A pre-configured `funcodec/` venv is
+already included in this repo with all dependencies installed.
+
+#### Why a dedicated venv?
+
+FunCodec 0.2.0 requires `typeguard==2.13.3` (conflicts with newer versions used by other codecs)
+and its `editdistance` dependency fails to build on Python 3.14+. FunCodec is therefore
+installed with `--no-deps` — `editdistance` is only needed for WER/CER scoring, not inference.
+
+#### Quick Start (using the included venv)
 
 ```bash
-# Print full step-by-step instructions
-neural-codec setup --codec funcodec
+# Windows
+funcodec\Scripts\activate
+neural-codec decode --codec funcodec_16khz --input ./audio_sample --output ./out
+
+# Linux / Mac
+source funcodec/bin/activate
+neural-codec decode --codec funcodec_16khz --input ./audio_sample --output ./out
 ```
 
-Manual summary:
+Model weights are downloaded automatically on first run.
+
+#### Fresh venv setup (if the funcodec/ venv is missing)
 
 ```bash
 python -m venv funcodec
-funcodec\Scripts\activate                     # Windows
-source funcodec/bin/activate                  # Linux / Mac
+funcodec\Scripts\activate          # Windows
+source funcodec/bin/activate       # Linux / Mac
 
-git clone https://github.com/alibaba-damo-academy/FunCodec.git
-cd FunCodec && pip install -e .
-pip install torch torchaudio numpy soundfile
+pip install -r requirements/base.txt
 
-cd egs/LibriTTS/codec && mkdir -p exp
-git lfs install
-git clone https://huggingface.co/alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch \
-    exp/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch
+# Install funcodec without its broken build dep (editdistance fails on Python 3.14+)
+pip install funcodec --no-deps
+
+# Install inference-only runtime deps (verified complete list)
+pip install huggingface_hub librosa kaldiio einops thop six \ pytorch-wpe torch-complex humanfriendly h5py "typeguard==2.13.3"
 ```
 
-**Build input list:**
+Or via the CLI (handles `--no-deps` automatically):
 ```bash
-find /path/to/wavs -name "*.wav" \
-  | awk -F/ '{printf "%s %s\n", $(NF-1)"_"$NF, $0}' > input.scp
+neural-codec setup --codec funcodec_16khz
 ```
 
-**Encode:**
-```bash
-model=audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch
-bash encoding_decoding.sh \
-  --stage 1 --batch_size 1 --num_workers 1 --gpu_devices 0 \
-  --model_dir exp/${model} --bit_width 16000 --file_sampling_rate 16000 \
-  --wav_scp input.scp --out_dir outputs/codecs
+#### Python API (inside the funcodec venv)
+
+```python
+from audio_codec import decode_folder
+decode_folder("funcodec_16khz", "audio_sample/", "out/", "cpu")
+decode_folder("11",             "audio_sample/", "out/", "cuda")
 ```
 
-**Decode:**
-```bash
-bash encoding_decoding.sh \
-  --stage 2 --batch_size 1 --num_workers 1 --gpu_devices 0 \
-  --model_dir exp/${model} --bit_width 16000 --file_sampling_rate 16000 \
-  --wav_scp outputs/codecs/codecs.txt --out_dir outputs/recon_wavs
+#### Known bugs fixed
+
+**Bug 1 — `Audio2Mel` hardcoded CUDA** (upstream bug in FunCodec 0.2.0)
+
+`funcodec/models/codec_basic.py` ships `Audio2Mel.__init__` with `device='cuda'` as a
+default and a hardcoded `.cuda()` call — crashes immediately on CPU-only machines:
+
 ```
+AssertionError: Torch not compiled with CUDA enabled
+```
+
+`FunCodecDecoder` patches `Audio2Mel.__init__` before model load, making it device-agnostic.
+
+**Bug 2 — incomplete dependency list** (`humanfriendly`, `h5py` missing from install)
+
+FunCodec's import chain requires `humanfriendly` (model summary logging) and `h5py`
+(dataset loading) but these are not pulled in by a `--no-deps` install. Both are now
+listed explicitly in `requirements/funcodec.txt` and `CODEC_REGISTRY["11"]["pip_packages"]`.
+
+**Bug 3 — wrong input tensor shape**
+
+`FunCodec._encode` expects shape `[B, C, T]` (3D). `FunCodecDecoder.decode_file` correctly
+reshapes audio to `[1, T]` before passing to `Speech2Token`, which adds the channel dim.
+
+**Bug 4 — `ValueError` crash on second `decode_folder` call** (Windows)
+
+On Windows, `importlib.util.find_spec('humanfriendly')` raises `ValueError` because the
+package's `__spec__` attribute is `None`. This caused the dep-check in `installer.py` to
+crash on every call after the first (when the package was already installed):
+
+```
+ValueError: humanfriendly.__spec__ is None
+```
+
+Fixed in `_import_ok()` by catching `ValueError` and treating it as importable — the
+`__spec__ = None` case means the package exists but is partially initialised at spec-scan
+time; the actual `import` succeeds fine.
+
+**Bug 5 — output filename used full HuggingFace repo path**
+
+Output files were named `<stem>_audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch.wav`
+because `self.name` was derived from the HuggingFace hub slug. Fixed in
+`FunCodecDecoder.__init__` to use a clean codec name:
+
+```python
+self.name = f"funcodec_{sample_rate // 1000}khz"   # -> funcodec_16khz
+```
+
+Output files are now correctly named `<stem>_funcodec_16khz.wav`.
 
 ---
 

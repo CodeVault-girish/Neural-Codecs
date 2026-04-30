@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/HP/Downloads/GIT//**)",
+      "Bash(python -c \"import funcodec\")",
+      "Bash(pip show *)",
+      "Bash(python -c \"import torch; print\\('torch:', torch.__version__\\)\")",
+      "Bash(/c/Users/HP/Downloads/GIT/Neural-Codecs/funcodec/Scripts/python -c \"import funcodec; print\\(funcodec.__version__\\)\")",
+      "Bash(/c/Users/HP/Downloads/GIT/Neural-Codecs/funcodec/Scripts/pip list *)",
+      "Bash(/c/Users/HP/Downloads/GIT/Neural-Codecs/funcodec/Scripts/python -c \"import funcodec; print\\(funcodec.__file__\\)\")",
+      "Bash(/c/Users/HP/Downloads/GIT/Neural-Codecs/funcodec/Scripts/pip show *)",
+      "Bash(/c/Users/HP/Downloads/GIT/Neural-Codecs/funcodec/Scripts/python *)",
+      "Read(//c/Users/HP/Downloads/**)",
+      "Bash(pip index *)",
+      "Bash(/c/Users/HP/Downloads/GIT/Neural-Codecs/funcodec/Scripts/pip index *)",
+      "Bash(/c/Users/HP/Downloads/GIT/Neural-Codecs/funcodec/Scripts/pip install *)",
+      "Bash([ -f \"/c/Users/HP/.cache/huggingface/hub/models--alibaba-damo--audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch/blobs/\"*.incomplete ])",
+      "Bash(python -c \"from audio_codec import decode_folder; decode_folder\\('funcodec_16khz', 'audio_sample', 'out', 'cpu'\\)\")"
+    ]
+  }
+}

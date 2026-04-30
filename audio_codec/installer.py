@@ -17,8 +17,16 @@ def _pip_install(packages: list):
 
 
 def _import_ok(module_name: str) -> bool:
-    """Return True if `module_name` can be imported (uses find_spec, no side effects)."""
-    return importlib.util.find_spec(module_name) is not None
+    """Return True if `module_name` can be imported (uses find_spec, no side effects).
+    Handles packages whose __spec__ is None (e.g. humanfriendly on Windows),
+    which causes find_spec to raise ValueError instead of returning None.
+    """
+    try:
+        return importlib.util.find_spec(module_name) is not None
+    except ValueError:
+        # __spec__ is None — package exists but is partially initialised;
+        # treat as importable since the import itself will succeed.
+        return True
 
 
 def _missing_imports(info: dict) -> list[str]:
@@ -27,12 +35,19 @@ def _missing_imports(info: dict) -> list[str]:
 
 
 def _install_entry(info: dict):
-    """pip-install all packages listed in info['pip_packages']."""
+    """pip-install all packages listed in info['pip_packages'] and info['pip_no_deps']."""
     name     = info["name"]
     packages = info.get("pip_packages", [])
+    no_deps  = info.get("pip_no_deps", [])
     notes    = info.get("install_notes", [])
 
     print(f"\n[{name}] Installing packages...")
+
+    # packages that need --no-deps (e.g. funcodec, to skip editdistance on Py3.14+)
+    for pkg in no_deps:
+        print(f"  Installing {pkg} --no-deps ...")
+        _pip_install([pkg, "--no-deps"])
+
     git_pkgs = [p for p in packages if p.startswith("git+")]
     reg_pkgs = [p for p in packages if not p.startswith("git+")]
 
@@ -138,14 +153,22 @@ def setup_all():
     print(_DLINE)
 
     seen: set  = set()
+    nodeps_pkgs: list = []
     reg_pkgs: list = []
     git_pkgs: list = []
     for info in CODEC_REGISTRY.values():
+        for pkg in info.get("pip_no_deps", []):
+            if pkg not in seen:
+                seen.add(pkg)
+                nodeps_pkgs.append(pkg)
         for pkg in info.get("pip_packages", []):
             if pkg not in seen:
                 seen.add(pkg)
                 (git_pkgs if pkg.startswith("git+") else reg_pkgs).append(pkg)
 
+    for pkg in nodeps_pkgs:
+        print(f"\nInstalling (--no-deps): {pkg}")
+        _pip_install([pkg, "--no-deps"])
     if reg_pkgs:
         print(f"\nInstalling: {', '.join(reg_pkgs)}")
         _pip_install(reg_pkgs)

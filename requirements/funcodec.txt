@@ -1,0 +1,33 @@
+# FunCodec — ID 11  (16 kHz)
+# funcodec is installed with --no-deps to skip editdistance, which fails to
+# build on Python 3.14+.  editdistance is only used for WER/CER scoring;
+# it is NOT needed for codec inference.
+#
+# Recommended: use the dedicated funcodec/ venv (already in this repo):
+#   Windows : funcodec\Scripts\activate
+#   Linux   : source funcodec/bin/activate
+#   Then    : pip install -r requirements/funcodec.txt
+#
+# Or via CLI (activates the same install path):
+#   neural-codec setup --codec funcodec_16khz
+
+-r base.txt
+
+# Install funcodec core without its broken build dep (editdistance)
+# Do NOT change this to a regular install line — it must use --no-deps
+# The CLI installer handles this automatically via the pip_no_deps field.
+# Manual equivalent:
+#   pip install funcodec --no-deps
+#   pip install huggingface_hub librosa kaldiio einops thop six pytorch-wpe torch-complex "typeguard==2.13.3"
+
+huggingface_hub
+librosa
+kaldiio
+einops
+thop
+six
+pytorch-wpe
+torch-complex
+humanfriendly
+h5py
+typeguard==2.13.3
