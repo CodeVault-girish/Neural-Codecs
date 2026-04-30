@@ -15,7 +15,10 @@
       "Bash(/c/Users/HP/Downloads/GIT/Neural-Codecs/funcodec/Scripts/pip index *)",
       "Bash(/c/Users/HP/Downloads/GIT/Neural-Codecs/funcodec/Scripts/pip install *)",
       "Bash([ -f \"/c/Users/HP/.cache/huggingface/hub/models--alibaba-damo--audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch/blobs/\"*.incomplete ])",
-      "Bash(python -c \"from audio_codec import decode_folder; decode_folder\\('funcodec_16khz', 'audio_sample', 'out', 'cpu'\\)\")"
+      "Bash(python -c \"from audio_codec import decode_folder; decode_folder\\('funcodec_16khz', 'audio_sample', 'out', 'cpu'\\)\")",
+      "Bash(C:/Users/HP/Downloads/GIT/Neural-Codecs/AudioDec/audiodec/Scripts/python.exe *)",
+      "Bash(\"audiodec/Scripts/python.exe\" AudioDec.py --model libritts_v1 --cuda -1 -i \"../audio_sample/03-01-02-01-01-01-01.wav\" -o \"../out_audiodec/\")",
+      "Bash(\"audiodec/Scripts/python.exe\" AudioDec.py --model libritts_v1 --cuda -1 -i \"../audio_sample/\" -o \"../out_audiodec/\")"
     ]
   }
 }
