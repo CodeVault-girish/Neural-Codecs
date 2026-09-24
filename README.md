@@ -20,15 +20,26 @@ codec-distorted datasets, evaluating codec quality, or preprocessing audio for T
 | 8 | `encodec_48khz` | 48 kHz | `pip install transformers encodec` | stereo |
 | 9 | `soundstream_16khz` | 16 kHz | `pip install soundstream` ⚠️ | mono |
 | 10 | `speechtokenizer` | 16 kHz | pip + manual checkpoint | mono |
-| 11 | `funcodec_16khz` | 16 kHz | dedicated venv ⚠️ | mono |
+| 11 | `funcodec_en_libritts_16k_nq32ds640` | 16 kHz | dedicated venv ⚠️ | mono |
+| 12 | `funcodec_en_libritts_16k_gr1nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono |
+| 13 | `funcodec_en_libritts_16k_gr8nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono |
+| 14 | `funcodec_en_libritts_16k_nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono |
+| 15 | `funcodec_zh_en_16k_nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono |
+| 16 | `funcodec_zh_en_16k_nq32ds640` | 16 kHz | dedicated venv ⚠️ | mono |
+| 17 | `academicodec_hifi_16k_320d` | 16 kHz | cloned repo + HuggingFace ⚠️ | mono |
+| 18 | `academicodec_hifi_16k_320d_large_uni` | 16 kHz | cloned repo + HuggingFace ⚠️ | mono |
+| 19 | `academicodec_hifi_24k_320d` | 24 kHz | cloned repo + HuggingFace ⚠️ | mono |
 | — | `AudioDec` | 24 / 48 kHz | included venv ⚠️ | mono/stereo |
 
 > ⚠️ **SoundStream** (`soundstream==0.0.1`) pins `numpy<2.0` and `huggingface-hub<0.16`.
 > After installing it, run `pip install --upgrade huggingface-hub` to keep EnCodec working.
 > For a fully clean setup, use a dedicated virtual environment for SoundStream.
 
-> ⚠️ **FunCodec** requires a dedicated virtual environment — its dependencies conflict with
-> other codecs. A pre-configured `funcodec/` venv is included in this repo. See [below](#11--funcodec).
+> ⚠️ **FunCodec** (IDs 11–16) requires a dedicated virtual environment — its dependencies conflict with
+> other codecs. A pre-configured `funcodec/` venv is included in this repo. See [below](#11-16--funcodec).
+
+> ⚠️ **AcademiCodec / HiFi-Codec** (IDs 17–19) requires the AcademiCodec repo cloned alongside this
+> repo at `../AcademiCodec/`. Checkpoints download automatically from HuggingFace. See [below](#17-18-19--academicodec--hifi-codec).
 
 > ⚠️ **AudioDec** requires its own venv (`AudioDec/audiodec/`) and must be run from the `AudioDec/`
 > directory. The repo, checkpoints, and venv are already included. See [below](#audiodec-external).
@@ -53,7 +64,8 @@ Neural-Codecs/
 │       ├── encodec48.py
 │       ├── soundstream.py
 │       ├── speechtokenizer.py
-│       └── funcodec_decoder.py
+│       ├── funcodec_decoder.py
+│       └── academicodec.py
 ├── requirements/
 │   ├── base.txt           ← torch, torchaudio, soundfile, numpy, tqdm
 │   ├── snac.txt           ← IDs 1–3
@@ -359,10 +371,20 @@ neural-codec decode --codec speechtokenizer --input ./wavs --output ./out
 
 ---
 
-### 11 — FunCodec
+### 11–16 — FunCodec
 
-**Model:** `funcodec_16khz` (16 kHz, mono)
-**Weights:** auto-download from HuggingFace (`alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch`, ~150 MB)
+**Models (all 16 kHz, mono):**
+
+| ID | Name | HuggingFace hub |
+|----|------|----------------|
+| 11 | `funcodec_en_libritts_16k_nq32ds640` | `alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch` |
+| 12 | `funcodec_en_libritts_16k_gr1nq32ds320` | `alibaba-damo/audio_codec-freqcodec-en-libritts-16k-gr1nq32ds320-pytorch` |
+| 13 | `funcodec_en_libritts_16k_gr8nq32ds320` | `alibaba-damo/audio_codec-freqcodec-en-libritts-16k-gr8nq32ds320-pytorch` |
+| 14 | `funcodec_en_libritts_16k_nq32ds320` | `alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds320-pytorch` |
+| 15 | `funcodec_zh_en_16k_nq32ds320` | `alibaba-damo/audio_codec-encodec-zh_en-libritts-16k-nq32ds320-pytorch` |
+| 16 | `funcodec_zh_en_16k_nq32ds640` | `alibaba-damo/audio_codec-encodec-zh_en-libritts-16k-nq32ds640-pytorch` |
+
+**Weights:** auto-download from HuggingFace (~150 MB each)
 
 FunCodec must run in its own virtual environment. A pre-configured `funcodec/` venv is
 already included in this repo with all dependencies installed.
@@ -376,13 +398,15 @@ installed with `--no-deps` — `editdistance` is only needed for WER/CER scoring
 #### Quick Start (using the included venv)
 
 ```bash
-# Windows
-funcodec\Scripts\activate
-neural-codec decode --codec funcodec_16khz --input ./audio_sample --output ./out
-
 # Linux / Mac
 source funcodec/bin/activate
-neural-codec decode --codec funcodec_16khz --input ./audio_sample --output ./out
+neural-codec decode --codec funcodec_en_libritts_16k_nq32ds640 --input ./audio_sample --output ./out
+neural-codec decode --codec funcodec_en_libritts_16k_gr1nq32ds320 --input ./audio_sample --output ./out
+neural-codec decode --codec funcodec_zh_en_16k_nq32ds640 --input ./audio_sample --output ./out
+
+# Windows
+funcodec\Scripts\activate
+neural-codec decode --codec funcodec_en_libritts_16k_nq32ds640 --input ./audio_sample --output ./out
 ```
 
 Model weights are downloaded automatically on first run.
@@ -412,8 +436,8 @@ neural-codec setup --codec funcodec_16khz
 
 ```python
 from audio_codec import decode_folder
-decode_folder("funcodec_16khz", "audio_sample/", "out/", "cpu")
-decode_folder("11",             "audio_sample/", "out/", "cuda")
+decode_folder("funcodec_en_libritts_16k_nq32ds640", "audio_sample/", "out/", "cpu")
+decode_folder("11", "audio_sample/", "out/", "cuda")  # same model, by ID
 ```
 
 #### Known bugs fixed
@@ -465,6 +489,46 @@ self.name = f"funcodec_{sample_rate // 1000}khz"   # -> funcodec_16khz
 ```
 
 Output files are now correctly named `<stem>_funcodec_16khz.wav`.
+
+---
+
+### 17 · 18 · 19 — AcademiCodec / HiFi-Codec
+
+**Models:**
+
+| ID | Name | Sample Rate | Checkpoint (HuggingFace `Dongchao/AcademiCodec`) |
+|----|------|-------------|--------------------------------------------------|
+| 17 | `academicodec_hifi_16k_320d` | 16 kHz | `HiFi-Codec-16k-320d` |
+| 18 | `academicodec_hifi_16k_320d_large_uni` | 16 kHz | `HiFi-Codec-16k-320d-large-universal` |
+| 19 | `academicodec_hifi_24k_320d` | 24 kHz | `HiFi-Codec-24k-320d` |
+
+**Weights:** auto-download from HuggingFace (~242–255 MB each)
+
+#### Setup
+
+AcademiCodec has no pip-installable package. Clone the repo alongside Neural-Codecs:
+
+```bash
+# Clone next to Neural-Codecs (same parent directory)
+git clone https://github.com/yangdongchao/AcademiCodec.git
+
+# Your directory layout should look like:
+# ├── Neural-Codecs/
+# └── AcademiCodec/
+```
+
+The decoder automatically adds `../AcademiCodec/` to `sys.path` at runtime — no install needed.
+
+#### Decode
+
+```bash
+neural-codec decode --codec academicodec_hifi_16k_320d      --input ./wavs --output ./out --device cuda
+neural-codec decode --codec academicodec_hifi_16k_320d_large_uni --input ./wavs --output ./out --device cuda
+neural-codec decode --codec academicodec_hifi_24k_320d      --input ./wavs --output ./out --device cuda
+```
+
+Checkpoints download automatically on first use. Config files are read from the cloned
+`AcademiCodec/egs/<model>/config_*.json`.
 
 ---
 
