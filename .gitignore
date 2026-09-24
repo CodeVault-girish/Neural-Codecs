@@ -7,3 +7,23 @@ out/
 venv/
 funcodec/
 AudioDec/
+
+# SLURM logs
+*.out
+*.err
+nohup.out
+
+# Test & run artifacts
+test_out_all19/
+test_out*/
+
+# Virtual environments
+soundstream_venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Scratch logs from past runs
+*.log
