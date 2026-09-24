@@ -88,12 +88,18 @@ def decode_folder(name_or_id: str, in_dir: str, out_dir: str, device_str: str):
     # ── constructor kwargs ────────────────────────────────────
     ctor_kwargs: dict = {"device": device}
     if "hub_name" in info:
-        ctor_kwargs["hub_name"]    = info["hub_name"]
+        ctor_kwargs["hub_name"]      = info["hub_name"]
+    if "hub_subfolder" in info:
+        ctor_kwargs["hub_subfolder"] = info["hub_subfolder"]
+    if "hub_ckpt_file" in info:
+        ctor_kwargs["hub_ckpt_file"] = info["hub_ckpt_file"]
+    if "local_egs_dir" in info:
+        ctor_kwargs["local_egs_dir"] = info["local_egs_dir"]
     if info.get("sample_rate") is not None:
-        ctor_kwargs["sample_rate"] = info["sample_rate"]
+        ctor_kwargs["sample_rate"]   = info["sample_rate"]
     if "config_path" in info and "ckpt_path" in info:
-        ctor_kwargs["config_path"] = info["config_path"]
-        ctor_kwargs["ckpt_path"]   = info["ckpt_path"]
+        ctor_kwargs["config_path"]   = info["config_path"]
+        ctor_kwargs["ckpt_path"]     = info["ckpt_path"]
 
     print(f"\n{_LINE}")
     print(f" Codec  : {info['name']}")
@@ -117,9 +123,12 @@ def decode_folder(name_or_id: str, in_dir: str, out_dir: str, device_str: str):
 
         print(f"\nProcessing {total} file(s)...\n")
         pbar = tqdm(total=total, unit="file", ncols=72)
+        success_count = 0
         for src in _gen_wav_paths(in_dir):
             t0 = time.perf_counter()
-            decoder.decode_file(src, out_dir)
+            res = decoder.decode_file(src, out_dir)
+            if res is not None:
+                success_count += 1
             elapsed = time.perf_counter() - t0
             torch.cuda.empty_cache()
             gc.collect()
@@ -128,8 +137,11 @@ def decode_folder(name_or_id: str, in_dir: str, out_dir: str, device_str: str):
         pbar.close()
 
         print(f"\n{_LINE}")
-        print(f" Done. {total} file(s) written to: {out_dir}")
+        print(f" Done. {success_count} file(s) written to: {out_dir}")
+        if success_count < total:
+            print(f" Note: {total - success_count} file(s) were skipped/failed.")
         print(_LINE + "\n")
+
 
     finally:
         del decoder

@@ -121,13 +121,11 @@ CODEC_REGISTRY = {
         ],
     },
 
-    # ─── FunCodec ───
-    # funcodec is installed with --no-deps to skip editdistance, which fails to build
-    # on Python 3.14+.  editdistance is only used for WER/CER scoring, not inference.
+    # ─── FunCodec ── paper F4: en-libritts nq32ds640 (original entry) ───
+    # funcodec installed with --no-deps (skips editdistance, not needed for inference).
     # Weights (~150 MB) download automatically from HuggingFace on first use.
-    # Recommended: use the dedicated funcodec/ venv (already configured in this repo).
     "11": {
-        "name":          "funcodec_16khz",
+        "name":          "funcodec_en_libritts_16k_nq32ds640",
         "module":        "audio_codec.codecs.funcodec_decoder",
         "class":         "FunCodecDecoder",
         "hub_name":      "alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds640-pytorch",
@@ -136,17 +134,153 @@ CODEC_REGISTRY = {
         "pip_packages":  [
             "huggingface_hub", "librosa", "kaldiio", "einops",
             "thop", "six", "pytorch-wpe", "torch-complex",
-            "humanfriendly", "h5py",
-            "typeguard==2.13.3",
+            "humanfriendly", "h5py", "typeguard==2.13.3",
         ],
         "import_checks": ["funcodec", "huggingface_hub", "librosa", "kaldiio",
                           "einops", "thop", "humanfriendly", "h5py"],
         "install_notes": [
-            "funcodec is installed with --no-deps (skips editdistance, not needed for inference).",
-            "Recommended: activate the dedicated venv before running:",
-            "  Windows : funcodec\\Scripts\\activate",
-            "  Linux   : source funcodec/bin/activate",
-            "  Then run: neural-codec decode --codec funcodec_16khz --input ./wavs --output ./out",
+            "source funcodec/bin/activate",
+            "neural-codec decode --codec funcodec_en_libritts_16k_nq32ds640 --input ./wavs --output ./out",
+        ],
+    },
+
+    # ─── FunCodec (FreqCodec) ── paper F1: gr1nq32ds320 ───
+    "12": {
+        "name":          "funcodec_en_libritts_16k_gr1nq32ds320",
+        "module":        "audio_codec.codecs.funcodec_decoder",
+        "class":         "FunCodecDecoder",
+        "hub_name":      "alibaba-damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr1nq32ds320-pytorch",
+        "sample_rate":   16000,
+        "pip_no_deps":   ["funcodec"],
+        "pip_packages":  [
+            "huggingface_hub", "librosa", "kaldiio", "einops",
+            "thop", "six", "pytorch-wpe", "torch-complex",
+            "humanfriendly", "h5py", "typeguard==2.13.3",
+        ],
+        "import_checks": ["funcodec", "huggingface_hub", "librosa", "kaldiio",
+                          "einops", "thop", "humanfriendly", "h5py"],
+    },
+
+    # ─── FunCodec (FreqCodec) ── paper F2: gr8nq32ds320 ───
+    "13": {
+        "name":          "funcodec_en_libritts_16k_gr8nq32ds320",
+        "module":        "audio_codec.codecs.funcodec_decoder",
+        "class":         "FunCodecDecoder",
+        "hub_name":      "alibaba-damo/audio_codec-freqcodec_magphase-en-libritts-16k-gr8nq32ds320-pytorch",
+        "sample_rate":   16000,
+        "pip_no_deps":   ["funcodec"],
+        "pip_packages":  [
+            "huggingface_hub", "librosa", "kaldiio", "einops",
+            "thop", "six", "pytorch-wpe", "torch-complex",
+            "humanfriendly", "h5py", "typeguard==2.13.3",
+        ],
+        "import_checks": ["funcodec", "huggingface_hub", "librosa", "kaldiio",
+                          "einops", "thop", "humanfriendly", "h5py"],
+    },
+
+    # ─── FunCodec (EnCodec) ── paper F3: en-libritts nq32ds320 ───
+    "14": {
+        "name":          "funcodec_en_libritts_16k_nq32ds320",
+        "module":        "audio_codec.codecs.funcodec_decoder",
+        "class":         "FunCodecDecoder",
+        "hub_name":      "alibaba-damo/audio_codec-encodec-en-libritts-16k-nq32ds320-pytorch",
+        "sample_rate":   16000,
+        "pip_no_deps":   ["funcodec"],
+        "pip_packages":  [
+            "huggingface_hub", "librosa", "kaldiio", "einops",
+            "thop", "six", "pytorch-wpe", "torch-complex",
+            "humanfriendly", "h5py", "typeguard==2.13.3",
+        ],
+        "import_checks": ["funcodec", "huggingface_hub", "librosa", "kaldiio",
+                          "einops", "thop", "humanfriendly", "h5py"],
+    },
+
+    # ─── FunCodec (EnCodec) ── paper F5: zh_en general nq32ds320 ───
+    "15": {
+        "name":          "funcodec_zh_en_16k_nq32ds320",
+        "module":        "audio_codec.codecs.funcodec_decoder",
+        "class":         "FunCodecDecoder",
+        "hub_name":      "alibaba-damo/audio_codec-encodec-zh_en-general-16k-nq32ds320-pytorch",
+        "sample_rate":   16000,
+        "pip_no_deps":   ["funcodec"],
+        "pip_packages":  [
+            "huggingface_hub", "librosa", "kaldiio", "einops",
+            "thop", "six", "pytorch-wpe", "torch-complex",
+            "humanfriendly", "h5py", "typeguard==2.13.3",
+        ],
+        "import_checks": ["funcodec", "huggingface_hub", "librosa", "kaldiio",
+                          "einops", "thop", "humanfriendly", "h5py"],
+    },
+
+    # ─── FunCodec (EnCodec) ── paper F6: zh_en general nq32ds640 ───
+    "16": {
+        "name":          "funcodec_zh_en_16k_nq32ds640",
+        "module":        "audio_codec.codecs.funcodec_decoder",
+        "class":         "FunCodecDecoder",
+        "hub_name":      "alibaba-damo/audio_codec-encodec-zh_en-general-16k-nq32ds640-pytorch",
+        "sample_rate":   16000,
+        "pip_no_deps":   ["funcodec"],
+        "pip_packages":  [
+            "huggingface_hub", "librosa", "kaldiio", "einops",
+            "thop", "six", "pytorch-wpe", "torch-complex",
+            "humanfriendly", "h5py", "typeguard==2.13.3",
+        ],
+        "import_checks": ["funcodec", "huggingface_hub", "librosa", "kaldiio",
+                          "einops", "thop", "humanfriendly", "h5py"],
+    },
+
+    # ─── AcademiCodec / HiFi-Codec ── paper B1: hifi_16k_320d ───
+    # Checkpoint: Dongchao/AcademiCodec  file "HiFi-Codec-16k-320d"  (root, no ext)
+    # Config    : AcademiCodec/egs/HiFi-Codec-16k-320d/config_16k_320d.json (cloned repo)
+    "17": {
+        "name":           "academicodec_hifi_16k_320d",
+        "module":         "audio_codec.codecs.academicodec",
+        "class":          "AcademiCodecDecoder",
+        "hub_name":       "Dongchao/AcademiCodec",
+        "hub_ckpt_file":  "HiFi-Codec-16k-320d",
+        "local_egs_dir":  "HiFi-Codec-16k-320d",
+        "sample_rate":    16000,
+        "pip_packages":   ["huggingface_hub", "librosa"],
+        "import_checks":  ["huggingface_hub", "librosa"],
+        "install_notes":  [
+            "Requires AcademiCodec cloned at <repo_root>/../AcademiCodec.",
+            "Checkpoint (~242 MB) downloads from Dongchao/AcademiCodec on HuggingFace.",
+        ],
+    },
+
+    # ─── AcademiCodec / HiFi-Codec ── paper B2: hifi_16k_320d_large_uni ───
+    # Checkpoint: Dongchao/AcademiCodec  file "HiFi-Codec-16k-320d-large-universal"
+    # Config    : same 320d architecture — uses HiFi-Codec-16k-320d egs config
+    "18": {
+        "name":           "academicodec_hifi_16k_320d_large_uni",
+        "module":         "audio_codec.codecs.academicodec",
+        "class":          "AcademiCodecDecoder",
+        "hub_name":       "Dongchao/AcademiCodec",
+        "hub_ckpt_file":  "HiFi-Codec-16k-320d-large-universal",
+        "local_egs_dir":  "HiFi-Codec-16k-320d",
+        "sample_rate":    16000,
+        "pip_packages":   ["huggingface_hub", "librosa"],
+        "import_checks":  ["huggingface_hub", "librosa"],
+        "install_notes":  [
+            "Large-universal checkpoint shares 320d architecture config.",
+        ],
+    },
+
+    # ─── AcademiCodec / HiFi-Codec ── paper B3: hifi_24k_320d ───
+    # Checkpoint: Dongchao/AcademiCodec  file "HiFi-Codec-24k-320d"
+    # Config    : AcademiCodec/egs/HiFi-Codec-24k-320d/config_24k_320d.json
+    "19": {
+        "name":           "academicodec_hifi_24k_320d",
+        "module":         "audio_codec.codecs.academicodec",
+        "class":          "AcademiCodecDecoder",
+        "hub_name":       "Dongchao/AcademiCodec",
+        "hub_ckpt_file":  "HiFi-Codec-24k-320d",
+        "local_egs_dir":  "HiFi-Codec-24k-320d",
+        "sample_rate":    24000,
+        "pip_packages":   ["huggingface_hub", "librosa"],
+        "import_checks":  ["huggingface_hub", "librosa"],
+        "install_notes":  [
+            "24 kHz HiFi-Codec. Checkpoint (~255 MB) auto-downloads from HuggingFace.",
         ],
     },
 }
