@@ -8,28 +8,28 @@ codec-distorted datasets, evaluating codec quality, or preprocessing audio for T
 
 ## Codec Support
 
-| ID | Name | Sample Rate | Install | Output |
-|----|------|-------------|---------|--------|
-| 1 | `snac_24khz` | 24 kHz | `pip install snac` | mono |
-| 2 | `snac_32khz` | 32 kHz | `pip install snac` | mono |
-| 3 | `snac_44khz` | 44 kHz | `pip install snac` | mono |
-| 4 | `dac_16khz` | 16 kHz | `pip install descript-audio-codec` | mono |
-| 5 | `dac_24khz` | 24 kHz | `pip install descript-audio-codec` | mono |
-| 6 | `dac_44khz` | 44 kHz | `pip install descript-audio-codec` | mono |
-| 7 | `encodec_24khz` | 24 kHz | `pip install transformers encodec` | mono |
-| 8 | `encodec_48khz` | 48 kHz | `pip install transformers encodec` | stereo |
-| 9 | `soundstream_16khz` | 16 kHz | `pip install soundstream` ⚠️ | mono |
-| 10 | `speechtokenizer` | 16 kHz | pip + manual checkpoint | mono |
-| 11 | `funcodec_en_libritts_16k_nq32ds640` | 16 kHz | dedicated venv ⚠️ | mono |
-| 12 | `funcodec_en_libritts_16k_gr1nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono |
-| 13 | `funcodec_en_libritts_16k_gr8nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono |
-| 14 | `funcodec_en_libritts_16k_nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono |
-| 15 | `funcodec_zh_en_16k_nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono |
-| 16 | `funcodec_zh_en_16k_nq32ds640` | 16 kHz | dedicated venv ⚠️ | mono |
-| 17 | `academicodec_hifi_16k_320d` | 16 kHz | cloned repo + HuggingFace ⚠️ | mono |
-| 18 | `academicodec_hifi_16k_320d_large_uni` | 16 kHz | cloned repo + HuggingFace ⚠️ | mono |
-| 19 | `academicodec_hifi_24k_320d` | 24 kHz | cloned repo + HuggingFace ⚠️ | mono |
-| — | `AudioDec` | 24 / 48 kHz | included venv ⚠️ | mono/stereo |
+| ID | Name | Sample Rate | Install | Output | CodecFake (Table 1) |
+|----|------|-------------|---------|--------|---------------------|
+| 1 | `snac_24khz` | 24 kHz | `pip install snac` | mono | — |
+| 2 | `snac_32khz` | 32 kHz | `pip install snac` | mono | — |
+| 3 | `snac_44khz` | 44 kHz | `pip install snac` | mono | — |
+| 4 | `dac_16khz` | 16 kHz | `pip install descript-audio-codec` | mono | **D1** |
+| 5 | `dac_24khz` | 24 kHz | `pip install descript-audio-codec` | mono | **D2** |
+| 6 | `dac_44khz` | 44 kHz | `pip install descript-audio-codec` | mono | **D3** |
+| 7 | `encodec_24khz` | 24 kHz | `pip install transformers encodec` | mono | **E** |
+| 8 | `encodec_48khz` | 48 kHz | `pip install transformers encodec` | stereo | — |
+| 9 | `soundstream_16khz` | 16 kHz | `pip install soundstream` ⚠️ | mono | — |
+| 10 | `speechtokenizer` | 16 kHz | pip + manual checkpoint | mono | **A** |
+| 11 | `funcodec_en_libritts_16k_nq32ds640` | 16 kHz | dedicated venv ⚠️ | mono | **F4** |
+| 12 | `funcodec_en_libritts_16k_gr1nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono | **F1** |
+| 13 | `funcodec_en_libritts_16k_gr8nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono | **F2** |
+| 14 | `funcodec_en_libritts_16k_nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono | **F3** |
+| 15 | `funcodec_zh_en_16k_nq32ds320` | 16 kHz | dedicated venv ⚠️ | mono | **F5** |
+| 16 | `funcodec_zh_en_16k_nq32ds640` | 16 kHz | dedicated venv ⚠️ | mono | **F6** |
+| 17 | `academicodec_hifi_16k_320d` | 16 kHz | cloned repo + HuggingFace ⚠️ | mono | **B1** |
+| 18 | `academicodec_hifi_16k_320d_large_uni` | 16 kHz | cloned repo + HuggingFace ⚠️ | mono | **B2** |
+| 19 | `academicodec_hifi_24k_320d` | 24 kHz | cloned repo + HuggingFace ⚠️ | mono | **B3** |
+| — | `AudioDec` | 24 / 48 kHz | included venv ⚠️ | mono/stereo | **C** |
 
 > ⚠️ **SoundStream** (`soundstream==0.0.1`) pins `numpy<2.0` and `huggingface-hub<0.16`.
 > After installing it, run `pip install --upgrade huggingface-hub` to keep EnCodec working.
