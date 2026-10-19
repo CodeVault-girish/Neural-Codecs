@@ -20,7 +20,7 @@ test_out*/
 # Virtual environments
 soundstream_venv/
 
-# Claude Code
+# Editor settings
 .claude/
 
 # Python cache
