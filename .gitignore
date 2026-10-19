@@ -20,6 +20,9 @@ test_out*/
 # Virtual environments
 soundstream_venv/
 
+# Claude Code
+.claude/
+
 # Python cache
 __pycache__/
 *.pyc
