@@ -4,11 +4,8 @@ import glob
 import torch
 import soundfile as sf
 import librosa
-import numpy as np
 from ..utils import TempWavContext
 
-# AcademiCodec has no setup.py — add cloned repo root to path so
-# `import academicodec` resolves to <GIT_ROOT>/AcademiCodec/academicodec/
 _ACADEMICODEC_SRC = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "AcademiCodec")
 )
@@ -20,15 +17,8 @@ class AcademiCodecDecoder:
     """
     HiFi-Codec / AcademiCodec decoder.
 
-    Checkpoint : downloaded from Dongchao/AcademiCodec on HuggingFace
-                 (root-level file, no extension)
-    Config     : JSON file from the cloned AcademiCodec repo at
-                 <GIT_ROOT>/AcademiCodec/egs/<egs_dir>/config_*.json
-
-    hub_ckpt_file  — filename in HuggingFace repo (e.g. "HiFi-Codec-16k-320d")
-    local_egs_dir  — subdirectory name under egs/ in the cloned repo
-                     (e.g. "HiFi-Codec-16k-320d").  For large-universal, point
-                     to the 320d egs dir since they share the same architecture.
+    Requires AcademiCodec cloned at <repo_root>/../AcademiCodec/.
+    Checkpoint downloads automatically from Dongchao/AcademiCodec on HuggingFace.
     """
 
     def __init__(self, hub_name: str, hub_ckpt_file: str, local_egs_dir: str,
@@ -45,19 +35,17 @@ class AcademiCodecDecoder:
             .replace("-", "_")
         )
 
-        # ── config: from cloned egs/ directory ───────────────────
-        egs_path      = os.path.join(_ACADEMICODEC_SRC, "egs", local_egs_dir)
-        config_files  = glob.glob(os.path.join(egs_path, "config_*.json"))
+        egs_path     = os.path.join(_ACADEMICODEC_SRC, "egs", local_egs_dir)
+        config_files = glob.glob(os.path.join(egs_path, "config_*.json"))
         if not config_files:
             raise FileNotFoundError(
                 f"No config_*.json found in {egs_path}. "
-                f"Ensure AcademiCodec is cloned at {_ACADEMICODEC_SRC}."
+                f"Clone AcademiCodec at {_ACADEMICODEC_SRC}."
             )
-        config_path = config_files[0]
 
-        # ── checkpoint: from HuggingFace (root-level, no extension) ──
         print(f"  -> Downloading {hub_ckpt_file} from {hub_name} ...")
-        ckpt_path = hf_hub_download(hub_name, hub_ckpt_file)
+        ckpt_path   = hf_hub_download(hub_name, hub_ckpt_file)
+        config_path = config_files[0]
 
         print(f"  -> Config     : {os.path.basename(config_path)}")
         print(f"  -> Checkpoint : {os.path.basename(ckpt_path)}")
@@ -66,7 +54,7 @@ class AcademiCodecDecoder:
         self.model = VQVAE(config_path, ckpt_path, with_encoder=True)
         self.model = self.model.to(device).eval()
 
-    def decode_file(self, src_path: str, out_dir: str) -> str:
+    def decode_file(self, src_path: str, out_dir: str) -> str | None:
         base     = os.path.splitext(os.path.basename(src_path))[0]
         out_name = f"{base}_{self.name}.wav"
         out_path = os.path.join(out_dir, out_name)
@@ -78,23 +66,16 @@ class AcademiCodecDecoder:
                 if wav.ndim > 1:
                     wav = wav.mean(axis=1)
                 if sr != self.sample_rate:
-                    wav = librosa.resample(wav, orig_sr=sr,
-                                           target_sr=self.sample_rate)
+                    wav = librosa.resample(wav, orig_sr=sr, target_sr=self.sample_rate)
 
-                # encode() expects [B, T]
                 x = torch.tensor(wav, dtype=torch.float32).unsqueeze(0).to(self.device)
+                with torch.inference_mode():
+                    codes = self.model.encode(x)
+                    recon = self.model(codes)
 
-                with torch.no_grad():
-                    codes = self.model.encode(x)   # [1, T', Nq=4]
-                    recon = self.model(codes)       # [1, 1, T']
-
-                recon_np = recon.squeeze().cpu().numpy()
-                sf.write(out_path, recon_np, self.sample_rate)
+                sf.write(out_path, recon.squeeze().cpu().numpy(), self.sample_rate)
                 return out_name
 
         except Exception as e:
-            msg = f"[SKIPPED] {src_path} | {type(e).__name__}: {e}"
-            print("\n" + "=" * 80)
-            print(msg)
-            print("=" * 80 + "\n")
+            print(f"\n[SKIPPED] {os.path.basename(src_path)} | {type(e).__name__}: {e}")
             return None
